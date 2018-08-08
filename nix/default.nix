@@ -1,13 +1,22 @@
-{ pkgs, stdenv, lib, ocamlPackages, nix-update-source, newScope, libev, fetchurl }:
+{ pkgs, stdenv, lib, nix-update-source, newScope, libev, fetchurl }:
 let
+	ocamlPackages = pkgs.ocaml-ng.ocamlPackages_4_05;
 	localPackages = lib.makeScope pkgs.newScope (self: with self; pkgs // {
-		ocamlPackages = lib.makeScope pkgs.newScope (self: with self; ocamlPackages // {
-			opam-lib = callPackage ./opam-lib.nix {};
+		ocamlPackages = lib.makeScope pkgs.newScope (self:
+			let opam = callPackage ./opam.nix {}; in with self; ocamlPackages // {
+			opam-solver = callPackage opam.solver {};
+			opam-core = callPackage opam.core {};
+			opam-format = callPackage opam.format {};
+			opam-file-format = callPackage opam.file-format {};
+			opam-installer = callPackage opam.installer {};
 			cudf = callPackage ./cudf.nix {};
 			dose3 = callPackage ./dose3.nix {};
+			dune = callPackage ./dune.nix {};
+			mccs = callPackage ./mccs.nix {};
 			basedir = callPackage ./basedir.nix {};
 		});
 	});
+	ocaml = ocamlPackages.ocaml;
 
 	ocVersion = (builtins.parseDrvName (localPackages.ocamlPackages.ocaml.name)).version;
 in
@@ -15,7 +24,6 @@ with localPackages; with localPackages.ocamlPackages;
 stdenv.mkDerivation {
 	name = "opam2nix-${lib.removeSuffix "\n" (builtins.readFile ../VERSION)}";
 	src = if lib.isStorePath ../. then ../. else (nix-update-source.fetch ./src.json).src;
-	# unpackCmd = "tar xzf $src";
 	buildPhase = "gup all";
 	installPhase = ''
 		mkdir $out
@@ -34,7 +42,7 @@ stdenv.mkDerivation {
 	buildInputs = [
 		ocaml
 		findlib
-		opam-lib
+		opam-solver
 		ocaml_lwt
 		ocurl
 		yojson
@@ -43,7 +51,7 @@ stdenv.mkDerivation {
 		gup
 		ounit
 		makeWrapper
-		jbuilder
+		dune
 		ocaml-migrate-parsetree
 		coreutils
 
