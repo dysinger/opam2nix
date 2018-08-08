@@ -1,27 +1,41 @@
-{ stdenv, pkgs, fetchFromGitHub }:
-let base = {
-	name = "opam-lib"; # TODO: name individually
+{ stdenv, pkgs, fetchFromGitHub, ocamlPackages }:
+let base = name: {
+		propagatedBuildInputs ? [],
+		buildInputs ? [],
+		... } @ attrs: attrs // {
+	name = "opam-${name}"; # TODO: name individually
 	src = fetchFromGitHub {
-		repo = "opam";
 		owner = "ocaml";
+		repo = "opam";
 		rev = "2.0.0-rc3";
 		sha256 = "07zzabv8qrgqglzxm3jkb33byfjvsrimly5m1jgi6m9mdcqzp8wb";
 	};
-}; in
-
+	createFindlibDestdir = true;
+	propagatedBuildInputs = [ ocamlPackages.findlib] ++ propagatedBuildInputs;
+	buildInputs = [ ocamlPackages.ocaml ocamlPackages.dune ] ++ buildInputs;
+	buildFlags = "opam-${name}.install";
+	installPhase = "dune install -p opam-${name} --prefix $out opam-${name} || (ls -lr; env; exit 1)";
+	configureFlags = "--disable-checks";
+};
+in
 {
-	core = { cppo, dune, ocamlgraph, re }: stdenv.mkDerivation (base // {
-		buildInputs = [cppo dune ocamlgraph re];
-		buildFlags = "core.install";
+	core = { cppo, dune, ocamlgraph, re, cmdliner }: stdenv.mkDerivation (base "core" {
+		propagatedBuildInputs = [ ocamlgraph re ];
+		buildInputs = [cppo cmdliner];
 	});
-	file-format = {}: stdenv.mkDerivation (base // { });
-	format = { dune, opam-core, opam-file-format }: stdenv.mkDerivation (base // {
-		buildInputs = [dune opam-core opam-file-format];
+	format = { opam-core, opam-file-format, re}: stdenv.mkDerivation (base "format" {
+		propagatedBuildInputs = [ opam-core opam-file-format re];
 	});
-	installer = { cmdliner, dune, opam-format }: stdenv.mkDerivation (base // {
-		buildInputs = [cmdliner dune opam-format ];
+	installer = { cmdliner, opam-format }: stdenv.mkDerivation (base "installer" {
+		propagatedBuildInputs = [ cmdliner opam-format ];
 	});
-	solver = { cudf, dose3, dune, mccs, opam-format }: stdenv.mkDerivation (base // {
-		buildInputs = [cudf dose3 dune mccs opam-format ];
+	repository = { opam-format }: stdenv.mkDerivation (base "repository" {
+		propagatedBuildInputs = [ opam-format ];
+	});
+	solver = { cudf, dose3, mccs, opam-format }: stdenv.mkDerivation (base "solver" {
+		propagatedBuildInputs = [ cudf dose3 mccs opam-format ];
+	});
+	state = { opam-repository }: stdenv.mkDerivation (base "state" {
+		propagatedBuildInputs = [ opam-repository ];
 	});
 }

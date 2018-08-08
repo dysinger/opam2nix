@@ -9,9 +9,8 @@
 		str
 		; unix
 		yojson
-		opam-lib
-		opam-lib.solver
-		opam-lib.state
+		opam-solver
+		opam-state
 		lwt
 		lwt.unix
 		curl

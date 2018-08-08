@@ -1,14 +1,19 @@
 { pkgs, stdenv, lib, nix-update-source, newScope, libev, fetchurl }:
 let
 	ocamlPackages = pkgs.ocaml-ng.ocamlPackages_4_05;
+	ocaml = ocamlPackages.ocaml;
+	# TODO: check versions againa
+	# /home/tim/dev/ocaml/opam/src_ext/Makefile.sources
 	localPackages = lib.makeScope pkgs.newScope (self: with self; pkgs // {
 		ocamlPackages = lib.makeScope pkgs.newScope (self:
-			let opam = callPackage ./opam.nix {}; in with self; ocamlPackages // {
-			opam-solver = callPackage opam.solver {};
+			let opam = callPackage ./opam.nix { ocamlPackages = self; }; in with self; ocamlPackages // {
 			opam-core = callPackage opam.core {};
 			opam-format = callPackage opam.format {};
-			opam-file-format = callPackage opam.file-format {};
+			opam-file-format = callPackage ./opam-file-format.nix {};
 			opam-installer = callPackage opam.installer {};
+			opam-repository = callPackage opam.repository {};
+			opam-solver = callPackage opam.solver {};
+			opam-state = callPackage opam.state {};
 			cudf = callPackage ./cudf.nix {};
 			dose3 = callPackage ./dose3.nix {};
 			dune = callPackage ./dune.nix {};
@@ -16,7 +21,6 @@ let
 			basedir = callPackage ./basedir.nix {};
 		});
 	});
-	ocaml = ocamlPackages.ocaml;
 
 	ocVersion = (builtins.parseDrvName (localPackages.ocamlPackages.ocaml.name)).version;
 in
@@ -43,6 +47,7 @@ stdenv.mkDerivation {
 		ocaml
 		findlib
 		opam-solver
+		opam-state
 		ocaml_lwt
 		ocurl
 		yojson

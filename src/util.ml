@@ -139,3 +139,8 @@ let decode_nix_safe_path str =
 		| Delim x -> Hex.to_char x.[2] x.[3] |> String.make 1
 		| Text x -> x
 	) |> String.concat ""
+
+module List = struct
+	include List
+	let to_string fn lst = "[" ^ (String.concat ", " (map fn lst)) ^ "]"
+end

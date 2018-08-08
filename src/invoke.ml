@@ -114,6 +114,7 @@ let load_env () =
 							spec := Some (Opam_metadata.load_opam path)
 					| "spec", other -> unexpected_json "spec" other
 
+					(* TODO: use OpamSysPoll *)
 					| "ocaml-version", `String version -> add_var "ocaml-version" (S version)
 					| "ocaml-version", other -> unexpected_json "ocaml-version" other
 
